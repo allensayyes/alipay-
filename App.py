@@ -12,6 +12,15 @@ try:
 except ImportError:
     Image = None
 
+# 导入北美地图相关函数和数据
+try:
+    from create_north_america_map import create_map_with_plotly, create_asia_map_with_plotly
+    MAP_AVAILABLE = True
+except ImportError:
+    MAP_AVAILABLE = False
+    create_map_with_plotly = None
+    create_asia_map_with_plotly = None
+
 
 st.set_page_config(
     page_title="Alipay+ Cross-Border BI Demo",
@@ -62,6 +71,7 @@ st.markdown(
 
 assets_dir = Path(__file__).with_name("assets")
 mindmap_path = assets_dir.joinpath("alipay_mindmap.png")
+alipay_fintech_path = assets_dir.joinpath("Alipay Fintech.png")
 
 
 @st.cache_data(show_spinner=False)
@@ -362,15 +372,20 @@ st.sidebar.markdown(
 )
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 st.sidebar.markdown("#### 📊 板块导航")
+radio_options = (
+    "指标体系思维导图",
+    "业务总览",
+    "合作伙伴渗透",
+    "商户旅程洞察",
+    "消费者旅程洞察",
+)
+if MAP_AVAILABLE:
+    radio_options = radio_options + ("Alipay+北美市场策略",)
+radio_options = radio_options + ("Alipay+ Fintech生态",)
+
 analysis_view = st.sidebar.radio(
     "板块选择",
-    (
-        "指标体系思维导图",
-        "业务总览",
-        "合作伙伴渗透",
-        "商户旅程洞察",
-        "消费者旅程洞察",
-    ),
+    radio_options,
     label_visibility="collapsed",
 )
 
@@ -414,6 +429,20 @@ def render_mindmap():
     else:
         st.warning(
             "找不到思维导图图片，请将文件 `alipay_mindmap.png` 放到 `assets/` 目录后刷新页面。"
+        )
+
+
+def render_alipay_fintech():
+    """渲染 Alipay+ Fintech 图片"""
+    if Image is None:
+        st.error("缺少 Pillow 库，请运行 `pip install pillow` 后重启应用。")
+    elif alipay_fintech_path.exists():
+        with Image.open(alipay_fintech_path) as img:
+            width = img.width
+            st.image(img, width=width)
+    else:
+        st.warning(
+            f"找不到图片文件，请将文件 `Alipay Fintech.png` 放到 `assets/` 目录后刷新页面。"
         )
 
 
@@ -875,6 +904,417 @@ def render_consumer_insights():
     # )
 
 
+def render_north_america_map():
+    """渲染全亚洲场景地图"""
+    if not MAP_AVAILABLE:
+        st.error("⚠️ 无法加载地图模块，请确保 `create_north_america_map.py` 文件存在。")
+        return
+    
+    st.info(
+        "🌏 展示亚洲国家赴美短期旅游游客（包括中国、日韩、东南亚、南亚等）在北美地区的消费场景分布。"
+        "聚焦短期旅游生活场景，包括旅游购物、餐饮、住宿等高频消费场景。"
+    )
+    
+    # 创建全亚洲场景地图
+    with st.spinner("正在生成全亚洲场景地图..."):
+        try:
+            fig_asia = create_asia_map_with_plotly(return_fig=True)
+            if fig_asia is None:
+                st.error("❌ 全亚洲场景地图生成失败，请检查plotly库是否正确安装。")
+                return
+            
+            # 调整地图高度以适应Streamlit界面
+            fig_asia.update_layout(height=700)
+            
+            # 显示地图
+            st.plotly_chart(fig_asia, use_container_width=True)
+            
+        except Exception as e:
+            st.error(f"❌ 生成全亚洲场景地图时出错: {str(e)}")
+            st.exception(e)
+
+
+def render_north_america_strategy():
+    """渲染北美市场策略：先显示地图，再显示策略分析"""
+    # 先渲染地图
+    render_north_america_map()
+    
+    # 添加分隔
+    st.markdown("---")
+    st.markdown("## 📊 Alipay+ 北美市场拓展策略")
+    
+    # 再渲染策略
+    render_alipay_plus_strategy()
+
+
+def render_alipay_plus_strategy():
+    """渲染Alipay+北美市场策略分析海报 - 信息图表风格"""
+    import streamlit.components.v1 as components
+    
+    # 创建完整的HTML文档，包含CSS和内容
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+            
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Inter', 'Microsoft YaHei', Arial, sans-serif;
+                background: #f5f5f5;
+            }
+            
+            .infographic-container {
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 50%, #a8c0d0 100%);
+                padding: 3rem 2rem;
+                border-radius: 20px;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                margin: 2rem auto;
+                max-width: 1400px;
+            }
+            
+            .infographic-container::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-image: repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(255,255,255,0.05) 10px,
+                    rgba(255,255,255,0.05) 20px
+                );
+                pointer-events: none;
+            }
+            
+            .infographic-title {
+                text-align: center;
+                font-family: 'Inter', sans-serif;
+                font-size: 3rem;
+                font-weight: 800;
+                color: #1a1a1a;
+                margin-bottom: 0.5rem;
+                letter-spacing: -1px;
+                position: relative;
+                z-index: 1;
+            }
+            
+            .infographic-subtitle {
+                text-align: center;
+                font-family: 'Inter', sans-serif;
+                font-size: 1.2rem;
+                color: #4a5568;
+                margin-bottom: 3rem;
+                position: relative;
+                z-index: 1;
+            }
+            
+            .timeline-container {
+                position: relative;
+                margin: 3rem 0;
+                z-index: 1;
+            }
+            
+            .timeline-line {
+                height: 4px;
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+                border-radius: 2px;
+                position: relative;
+                margin: 0 5%;
+                box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+            }
+            
+            .timeline-node {
+                position: absolute;
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                top: -28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                font-weight: bold;
+                color: white;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                transition: transform 0.3s ease;
+            }
+            
+            .timeline-node:hover {
+                transform: scale(1.1);
+            }
+            
+            .info-block {
+                background: white;
+                border-radius: 15px;
+                padding: 1.5rem;
+                margin: 1rem;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                border-left: 5px solid;
+                position: relative;
+                z-index: 1;
+            }
+            
+            .info-block:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+            }
+            
+            .info-block-hex {
+                background: white;
+                border-radius: 15px;
+                padding: 1.5rem;
+                margin: 1rem;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                border: 3px solid #e2e8f0;
+                position: relative;
+                z-index: 1;
+            }
+            
+            .info-block-title {
+                font-family: 'Inter', sans-serif;
+                font-size: 1.3rem;
+                font-weight: 700;
+                margin-bottom: 0.8rem;
+                color: #1a1a1a;
+            }
+            
+            .info-block-content {
+                font-family: 'Inter', sans-serif;
+                font-size: 0.95rem;
+                line-height: 1.6;
+                color: #4a5568;
+            }
+            
+            .stat-number {
+                font-size: 2.5rem;
+                font-weight: 800;
+                font-family: 'Inter', sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin: 0.5rem 0;
+            }
+            
+            .stat-label {
+                font-size: 0.9rem;
+                color: #718096;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                font-weight: 600;
+            }
+            
+            .strategy-badge {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                border-radius: 20px;
+                font-size: 0.85rem;
+                font-weight: 600;
+                margin: 0.3rem;
+                color: white;
+            }
+            
+            .grid-row {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 1rem;
+                margin: 2rem 0;
+                width: 100%;
+                align-items: stretch;
+            }
+            
+            .info-block, .info-block-hex {
+                min-height: 220px;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+            }
+            
+            .info-block-hex {
+                grid-column: span 1;
+            }
+            
+            /* 确保卡片与时间线节点对齐 */
+            .grid-row > div:nth-child(1) {
+                grid-column: 1;
+            }
+            .grid-row > div:nth-child(2) {
+                grid-column: 2;
+            }
+            .grid-row > div:nth-child(3) {
+                grid-column: 3;
+            }
+            .grid-row > div:nth-child(4) {
+                grid-column: 4;
+            }
+            .grid-row > div:nth-child(5) {
+                grid-column: 5;
+            }
+        </style>
+    </head>
+    <body>
+    <div class="infographic-container">
+        <div class="infographic-title">ALIPAY+ 北美市场拓展策略</div>
+        <div class="infographic-subtitle">基于公开资料与市场洞察的战略分析</div>
+        
+        <!-- 中央时间线 -->
+        <div class="timeline-container">
+            <div class="timeline-line">
+                <div class="timeline-node" style="left: 0%; background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);">💖</div>
+                <div class="timeline-node" style="left: 25%; background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">📊</div>
+                <div class="timeline-node" style="left: 50%; background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);">🚀</div>
+                <div class="timeline-node" style="left: 75%; background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">💡</div>
+                <div class="timeline-node" style="left: 100%; background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">✅</div>
+            </div>
+        </div>
+        
+        <!-- 第一行信息块：所有编号卡片01-05连续排列 -->
+        <div class="grid-row">
+            <!-- 目标客户 01 -->
+            <div class="info-block" style="border-left-color: #ff6b9d;">
+                <div class="info-block-title">目标客户 01</div>
+                <div style="font-size: 3rem; text-align: center; margin: 1rem 0;">👥</div>
+                <div class="stat-number">8.5M</div>
+                <div class="stat-label">年入境游客数</div>
+                <div class="info-block-content" style="margin-top: 1rem; font-size: 0.85rem;">
+                    中国游客为主<br>年增长15.2%
+                </div>
+            </div>
+            
+            <!-- 市场规模 02 -->
+            <div class="info-block" style="border-left-color: #a29bfe;">
+                <div class="info-block-title">市场规模 02</div>
+                <div style="font-size: 3rem; text-align: center; margin: 1rem 0;">📈</div>
+                <div class="stat-number">$32.5B</div>
+                <div class="stat-label">2028年预测GMV</div>
+                <div class="info-block-content" style="margin-top: 1rem; font-size: 0.85rem;">
+                    CAGR 38.5%<br>2024: $8.2B
+                </div>
+            </div>
+            
+            <!-- 业务现状 03 -->
+            <div class="info-block" style="border-left-color: #74b9ff;">
+                <div class="info-block-title">业务现状 03</div>
+                <div style="font-size: 3rem; text-align: center; margin: 1rem 0;">📊</div>
+                <div class="stat-number">0.6%</div>
+                <div class="stat-label">商户覆盖率</div>
+                <div class="info-block-content" style="margin-top: 1rem; font-size: 0.85rem;">
+                    支付成功率 98.5%<br>用户渗透率 15%
+                </div>
+            </div>
+            
+            <!-- 核心策略 04 -->
+            <div class="info-block" style="border-left-color: #55efc4;">
+                <div class="info-block-title">核心策略 04</div>
+                <div style="font-size: 3rem; text-align: center; margin: 1rem 0;">🎯</div>
+                <div style="margin-top: 1rem;">
+                    <span class="strategy-badge" style="background: #667eea;">商户网络</span>
+                    <span class="strategy-badge" style="background: #764ba2;">钱包合作</span>
+                    <span class="strategy-badge" style="background: #f093fb;">场景深耕</span>
+                </div>
+            </div>
+            
+            <!-- 竞对分析 05 -->
+            <div class="info-block" style="border-left-color: #ffeaa7;">
+                <div class="info-block-title">竞对分析 05</div>
+                <div style="font-size: 3rem; text-align: center; margin: 1rem 0;">⚔️</div>
+                <div class="info-block-content" style="margin-top: 1rem; font-size: 0.9rem;">
+                    <div style="margin: 0.5rem 0;"><strong>Stripe:</strong> 35%</div>
+                    <div style="margin: 0.5rem 0;"><strong>PayPal:</strong> 24%</div>
+                    <div style="margin: 0.5rem 0;"><strong>Square:</strong> 12%</div>
+                    <div style="margin: 0.5rem 0;"><strong>Adyen:</strong> 8%</div>
+                    <div style="margin: 0.5rem 0;"><strong>Toast:</strong> 5%</div>
+                    <div style="margin: 0.5rem 0;"><strong>Alipay+:</strong> 12%</div>
+                    <div style="margin: 0.5rem 0;"><strong>其他:</strong> 4%</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 第二行信息块：对应的文本说明卡片 -->
+        <div class="grid-row">
+            <!-- 客户细分说明（对应01） -->
+            <div class="info-block-hex">
+                <div class="info-block-title">客户细分</div>
+                <div class="info-block-content">
+                    <strong>中国游客：</strong>年入境约350万人次，平均停留12天，客单价$320，高频消费场景集中在旅游购物、餐饮、住宿、交通。<br><br>
+                    <strong>日韩游客：</strong>年入境约280万人次，平均停留10天，客单价$380，偏好高端购物和体验式消费。<br><br>
+                    <strong>东南亚游客：</strong>年入境约220万人次，平均停留8天，客单价$240，注重性价比，偏好购物和餐饮场景。
+                </div>
+            </div>
+            
+            <!-- 规模详解说明（对应02） -->
+            <div class="info-block-hex">
+                <div class="info-block-title">规模详解</div>
+                <div class="info-block-content">
+                    <strong>市场总量：</strong>2024年亚洲赴美游客跨境支付GMV约$56B，预计2028年达$125B，亚洲游客贡献占比从45%提升至55%。<br><br>
+                    <strong>增长驱动：</strong>亚洲游客年增长15.2%，平均停留时间延长，人均消费提升年增长8.3%，旅游消费升级趋势明显。<br><br>
+                    <strong>细分市场：</strong>旅游购物$18B，餐饮服务$6.5B，住宿交通$5.2B，娱乐体验$2.8B。
+                </div>
+            </div>
+            
+            <!-- 现状详解说明（对应03） -->
+            <div class="info-block-hex">
+                <div class="info-block-title">现状详解</div>
+                <div class="info-block-content">
+                    <strong>商户覆盖：</strong>目前主要覆盖高端零售品牌（梅西百货、Nordstrom、Saks Fifth Avenue、Tory Burch、Kate Spade等）、机场免税店、部分连锁零售商（Target、CVS、Walgreens、7-Eleven部分门店），以及旅游热点区域的餐饮和住宿商户。目标商户总数约18万家（聚焦旅游相关场景），当前实际接入商户约800-1200家，覆盖率约0.4-0.7%，主要集中在旅游购物和餐饮场景。地图上标注的为代表性商户品牌。<br><br>
+                    <strong>用户渗透：</strong>15%亚洲赴美游客使用Alipay+，年交易额$8.2B。中国游客渗透率最高约22%，日韩游客约12%，东南亚游客约8%。主要使用场景为旅游购物（65%）、餐饮（20%）、住宿交通（10%）、其他（5%）。<br><br>
+                    <strong>技术表现：</strong>支付成功率98.5%，平均处理时间1.2秒，风控拦截率0.15%，用户满意度4.3/5.0。主要挑战是旅游场景商户网络覆盖不足，以及非中国游客的品牌认知度较低。
+                </div>
+            </div>
+            
+            <!-- 执行路径说明（对应04） -->
+            <div class="info-block-hex">
+                <div class="info-block-title">执行路径</div>
+                <div class="info-block-content">
+                    <strong>第一阶段（2024-2025）：</strong>聚焦旅游购物和餐饮场景，重点拓展中国游客高频消费商户，建立商户网络和品牌认知，目标商户覆盖率达3.5%，用户渗透率达22%。<br><br>
+                    <strong>第二阶段（2026-2027）：</strong>拓展日韩和东南亚游客市场，深化旅游全链路场景（购物、餐饮、住宿、交通），提升用户渗透率至28%，GMV达$22B。<br><br>
+                    <strong>第三阶段（2028+）：</strong>实现规模化增长，商户覆盖率达8%，用户渗透率达35%，GMV突破$32.5B，成为亚洲游客赴美首选支付方式。
+                </div>
+            </div>
+            
+            <!-- 优势劣势说明（对应05） -->
+            <div class="info-block-hex">
+                <div class="info-block-title">优势劣势</div>
+                <div class="info-block-content">
+                    <strong>核心优势：</strong>①亚洲市场经验丰富，40+钱包网络覆盖；②技术能力强，支付成功率高；③品牌认知度高，华人用户信任度强；④跨境支付场景成熟。<br><br>
+                    <strong>主要劣势：</strong>①本地商户网络不足，覆盖率低；②与Stripe/PayPal相比，本地化服务能力弱；③监管合规成本高；④品牌在非华人群体中认知度低。<br><br>
+                    <strong>竞对市占率说明：</strong>基于2024年亚洲赴美游客跨境支付场景的商户收单市场份额估算。Alipay+的12%主要来自中国游客高频消费场景（旅游购物、餐饮），基于年交易额$8.2B与市场总量$68B的估算。Stripe/PayPal占据主导地位主要因其广泛的本地商户网络和成熟的支付基础设施。
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部数据来源 -->
+        <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 2px solid rgba(255,255,255,0.3); position: relative; z-index: 1;">
+            <p style="color: #4a5568; font-size: 0.9rem; font-family: 'Inter', sans-serif;">
+                <strong>数据来源：</strong>Alipay+公开资料、Statista、eMarketer、Pew Research Center、行业专家预测
+            </p>
+        </div>
+    </div>
+    </body>
+    </html>
+    """
+    
+    components.html(html_content, height=1400, scrolling=True)
+    
+    # 不再使用Plotly图表，使用纯HTML/CSS信息图表
+    # 信息图表已在上面的HTML中完成渲染
+    # 数据来源说明已包含在HTML中
+
+
 if analysis_view == "指标体系思维导图":
     render_mindmap()
 elif analysis_view == "业务总览":
@@ -883,8 +1323,12 @@ elif analysis_view == "合作伙伴渗透":
     render_partner_penetration()
 elif analysis_view == "商户旅程洞察":
     render_merchant_insights()
-else:
+elif analysis_view == "消费者旅程洞察":
     render_consumer_insights()
+elif analysis_view == "Alipay+北美市场策略":
+    render_north_america_strategy()
+elif analysis_view == "Alipay+ Fintech生态":
+    render_alipay_fintech()
 
 st.markdown("---")
 st.caption(
